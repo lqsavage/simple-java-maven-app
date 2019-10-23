@@ -1,35 +1,21 @@
 pipeline {
-    agent {
-        node { label "master" }
-    }
+    agent none
     stages {
-        stage('Prepare Git Code') {
+        stage("build & SonarQube analysis") {
+            agent any
             steps {
-                echo "Prepare Git Code"
-
-                echo 'Preparing end..'
-            }
-        }
-        stage("Build") {
-            steps {
-                echo 'Build end..'
-            }
-        }
-        stage("Get Dockerfile & Bootstart.sh") {
-          steps {
-            echo 'Get Dockerfile end..'
-            }
-        }
-        stage("DockerBuild") {
-          steps {
-                echo 'DockerBuild end..'}
-        }
-        stage("DockerPush") {
-          steps {
-
-                echo 'DockerPush end..'
+                withSonarQubeEnv('LocalSonarQube') {
+                    bat 'mvn clean package sonar:sonar'
                 }
-
+            }
+        }
+        stage("Quality Gate") {
+            steps {
+                sleep(10)
+                timeout(time: 3, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
         }
     }
 }
